@@ -1,0 +1,50 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: odoodb-service
+spec:
+  selector:
+    app: odoo-db
+  type: NodePort
+  ports:
+    - protocol: TCP
+      port: 5432
+      targetPort: 5432
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: odoo-db
+  labels:
+    app: odoo-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: odoo-db
+  template:
+    metadata:
+      labels:
+        app: odoo-db
+    spec:
+      volumes:
+      - name: odoo-db
+        persistentVolumeClaim:
+                claimName: odoo-db
+      imagePullSecrets:
+      - name: pipeline-docker-registry
+      containers:
+      - name: odoo-db
+        image: postgres:10
+        env:
+        - name: POSTGRES_PASSWORD
+          value: odoo
+        - name: POSTGRES_USER
+          value: odoo
+        - name: PGDATA
+          value: "/var/lib/postgresql/data/pgdata"       
+        volumeMounts:
+           - name: odoo-db
+             mountPath: "/var/lib/postgresql/data/pgdata"
+        ports:
+        - containerPort: 5432
